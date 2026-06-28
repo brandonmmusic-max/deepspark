@@ -126,6 +126,6 @@ read the 128k numbers as evidence the ctx0 ceiling is higher than it is.
   — and therefore tok/s — is distribution-dependent. Your workload will differ.
 - **Single-user.** These are concurrency-1 decode rates. Throughput under load
   (multiple concurrent requests) is a different regime and not the subject here.
-- **Third-party runtime.** The b12x fork is referenced, not re-licensed; the
-  DSpark head and base model are DeepSeek releases. Reproduce against the linked
-  public artifacts.
+- **Open-source runtime.** The b12x fork is open source, included and credited
+  here with the author's permission ([CREDITS.md](CREDITS.md)); the DSpark head
+  and base model are DeepSeek releases.

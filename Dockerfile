@@ -12,11 +12,12 @@
 ARG B12X_IMAGE=voipmonitor/vllm:chthonic-consecration-f1190eab-b12x0ff2847-pr20-cu132
 FROM ${B12X_IMAGE}
 
-# The base image is the public b12x vLLM runtime; its tag (…-pr20-…) carries the
-# DeepSeek DSpark speculative-decode integration. This layer adds only the
-# reproducible serve config + Blackwell SM120 env defaults — it does NOT
-# redistribute the fork source. (If you maintain local vLLM patches, mount them
-# read-only at runtime over /opt/venv/lib/python3.12/site-packages/vllm.)
+# The base image is the public open-source b12x vLLM runtime. This repo also
+# vendors the matching b12x vLLM + DSpark integration source under ./overlay/vllm
+# (open source, included with the author's permission — see CREDITS.md) and
+# layers it in, so the build reproduces the exact serving stack used for the
+# benchmarks.
+COPY overlay/vllm /opt/venv/lib/python3.12/site-packages/vllm
 
 # Reproducible launch script.
 COPY serve/serve_dsv4_flash_dspark.sh /usr/local/bin/serve_dsv4_flash_dspark.sh

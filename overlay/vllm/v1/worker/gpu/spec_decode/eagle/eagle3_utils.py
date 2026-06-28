@@ -1,0 +1,57 @@
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: Copyright contributors to the vLLM project
+from typing import cast
+
+import torch.nn as nn
+
+from vllm.config import SpeculativeConfig
+from vllm.logger import init_logger
+from vllm.model_executor.models.interfaces import SupportsEagle3, supports_eagle3
+
+logger = init_logger(__name__)
+
+
+def set_eagle3_aux_hidden_state_layers(
+    model: nn.Module,
+    spec_config: SpeculativeConfig,
+) -> None:
+    if not supports_eagle3(model):
+        raise RuntimeError("Model does not support EAGLE3 interface")
+    # mypy may infer the class-level overload for supports_eagle3.
+    # Narrow explicitly to the runtime protocol instance.
+    if isinstance(model, type):
+        raise RuntimeError("Expected model instance for EAGLE3 configuration")
+    eagle3_model = cast(SupportsEagle3, model)
+
+    aux_layers = get_eagle3_aux_layers_from_config(spec_config)
+    if aux_layers:
+        logger.info("Using Eagle3 auxiliary layers from config: %s", aux_layers)
+    else:
+        aux_layers = eagle3_model.get_eagle3_default_aux_hidden_state_layers()
+        logger.info("Using Eagle3 auxiliary layers from model: %s", aux_layers)
+    eagle3_model.set_aux_hidden_state_layers(aux_layers)
+
+
+def get_eagle3_aux_layers_from_config(
+    spec_config: SpeculativeConfig,
+) -> tuple[int, ...] | None:
+    if not (spec_config and spec_config.draft_model_config):
+        return None
+    hf_config = spec_config.draft_model_config.hf_config
+    layer_ids = getattr(hf_config, "eagle_aux_hidden_state_layer_ids", None)
+    if layer_ids and isinstance(layer_ids, (list, tuple)):
+        return tuple(layer_ids)
+    # DFlash stores 0-based target layer ids; the capture hook indexes the
+    # hidden state BEFORE each layer, hence the +1 (HF hidden_states[i + 1]
+    # semantics, matching the V1 proposer).
+    dflash_config = getattr(hf_config, "dflash_config", None)
+    if isinstance(dflash_config, dict):
+        target_layer_ids = dflash_config.get("target_layer_ids")
+        if target_layer_ids and isinstance(target_layer_ids, (list, tuple)):
+            return tuple(int(i) + 1 for i in target_layer_ids)
+    dspark_target_layer_ids = getattr(hf_config, "dspark_target_layer_ids", None)
+    if dspark_target_layer_ids and isinstance(dspark_target_layer_ids, (list, tuple)):
+        # DSpark stores 0-based target layer ids in the head config; target
+        # aux capture indexes hidden states after layer N, so add one.
+        return tuple(int(i) + 1 for i in dspark_target_layer_ids)
+    return None

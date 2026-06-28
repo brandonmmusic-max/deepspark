@@ -17,3 +17,6 @@ models/
 *.sqlite
 nsys/
 .cache/
+
+# compiled rust binary (rebuilt / present in the runtime image)
+**/vllm-rs

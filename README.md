@@ -83,12 +83,11 @@ docker pull brandonmmusic/deepspark:v4-flash      # see Docker Hub link below
 docker build -t deepspark:v4-flash .
 ```
 
-The base is the public `voipmonitor/vllm:chthonic-…-pr20-cu132` b12x runtime —
-its `pr20` tag carries the DeepSeek **DSpark** speculative-decode integration, so
-no fork source is redistributed here. This repo's [Dockerfile](Dockerfile) adds
-only the reproducible serve config + the Blackwell SM120 env defaults. (Local
-vLLM tuning patches, if any, are mounted read-only at runtime — see the serve
-script.)
+The base is the public `voipmonitor/vllm:chthonic-…-pr20-cu132` **b12x** runtime —
+an open-source vLLM fork (see [CREDITS.md](CREDITS.md)). This repo vendors the
+matching b12x vLLM + DSpark integration source under [`overlay/vllm/`](overlay/vllm/)
+and the [Dockerfile](Dockerfile) layers it in, so the build reproduces the exact
+serving stack used for every number here.
 
 ### 2. Model checkpoints (Hugging Face)
 
@@ -127,14 +126,26 @@ Exact bench invocation + context sweep: [bench/README.md](bench/README.md).
 | [CAVEATS.md](CAVEATS.md) | ctx0-vs-128k analysis, synthetic-bench limits, run-to-run noise, temperature, losslessness, the honest kernel ceiling |
 | [Dockerfile](Dockerfile) | Reproducible image: public b12x base + DSpark vLLM overlay |
 | [serve/](serve/) | The actual launch script used for every number in this repo |
+| [overlay/vllm/](overlay/vllm/) | Vendored b12x vLLM + DSpark integration source (open source, credited) — what the image layers in |
+| [CREDITS.md](CREDITS.md) | Attribution: b12x author, DeepSeek, vLLM |
 | [results/](results/) | Raw campaign result docs (unedited) |
 
 ---
 
+## Acknowledgments
+
+The serving stack runs on the open-source **b12x vLLM fork** (the
+`voipmonitor/vllm` runtime) — its SM120 CUTE kernels, sparse-MLA decode, PCIe
+all-reduce, and DSpark integration are what make this work on consumer Blackwell.
+It is included and documented here **with the author's permission and at their
+request**; full credit for the runtime belongs to its author. **DeepSeek**
+released DeepSeek-V4-Flash and the DSpark draft method. Full attribution:
+[CREDITS.md](CREDITS.md).
+
 ## Scope / disclaimer
 
-This is a **single-rig research artifact**, not a product. The b12x runtime is a
-third-party vLLM fork (referenced, not re-licensed here). DSpark and
+This is a **single-rig research artifact**, not a product. The b12x runtime is an
+open-source vLLM fork, shared with permission and credited above. DSpark and
 DeepSeek-V4-Flash are DeepSeek releases. Numbers are specific to this hardware,
 this driver/CUDA, and this benchmark distribution; treat them as a reproducible
 data point, not a universal claim.

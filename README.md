@@ -99,10 +99,10 @@ the **serve script** in this repo.
 
 ### 1. Runtime image
 
-Either pull the prebuilt image linked to this repo:
+Either pull the prebuilt image:
 
 ```bash
-docker pull brandonmmusic/deepspark:v4-flash      # see Docker Hub link below
+docker pull verdictai/deepspark:v4-flash          # hub.docker.com/r/verdictai/deepspark
 ```
 
 …or build it yourself on top of the public b12x base:

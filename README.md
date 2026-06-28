@@ -161,6 +161,8 @@ Exact bench invocation + context sweep: [bench/README.md](bench/README.md).
 
 | File | Contents |
 |---|---|
+| [BENCHMARK.md](BENCHMARK.md) | Local b12x image — **3-run-average** decode + prefill, with honest run-to-run variance |
+| [B12X_CHANGES.md](B12X_CHANGES.md) | The local b12x kernel changes — dense-GEMM SM120 DeepGEMM port + `expected_m` decode hint (**live**); FC1 retile (attempted, **reverted**, W4A16-gated) |
 | [RESULTS.md](RESULTS.md) | Full `llm_decode_bench` grid: production-temp baseline, the optimization-lever campaign (what walled, what promoted), prefix-cache results, raw repeats |
 | [LAUNCH_CONFIG.md](LAUNCH_CONFIG.md) | The complete serve command, every flag explained, hardware, power, software versions |
 | [CAVEATS.md](CAVEATS.md) | ctx0-vs-128k analysis, synthetic-bench limits, run-to-run noise, temperature, losslessness, the honest kernel ceiling |

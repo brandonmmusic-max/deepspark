@@ -16,9 +16,8 @@ b12x provides the pieces that make this run on consumer Blackwell:
 - the **PCIe one-shot all-reduce** (tensor-parallel without NVLink),
 - the **DSpark speculative-decode** vLLM integration.
 
-**Full credit for the b12x runtime and its kernels belongs to its author.** A
-precise attribution line and/or canonical repository link will be placed here at
-the author's preference.
+**Full credit for the b12x runtime and its kernels belongs to its author**, who
+publishes it as the open-source `voipmonitor/vllm` images on Docker Hub.
 
 ## DeepSeek — the model & draft method
 

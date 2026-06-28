@@ -48,6 +48,34 @@ ctx0 prompt. It is distribution-flattered and the 128k cell is noisy. Trust ctx0
 
 ---
 
+## Measured acceptance — the evidence
+
+The explanation above is backed by the live vLLM spec-decode counters
+(`vllm:spec_decode_num_accepted_tokens_per_pos_total`), captured as the delta
+across a sustained `llm_decode_bench` run — measured, not asserted.
+
+**Production config (γ=5, 5 draft tokens), ctx0, temp 0.1 — decode 231.4 tok/s:**
+
+| Draft token position | Acceptance |
+|:---|---:|
+| 1 | 74.2% |
+| 2 | 50.6% |
+| 3 | 30.7% |
+| 4 | 19.2% |
+| 5 | 10.9% |
+
+- **Mean accepted length: 1.86 of 5 drafted** (+1 bonus = **2.86 tokens emitted per target step**).
+- Overall draft-token acceptance: **37.1%** (6,638 accepted of 17,875 drafted).
+
+This per-position acceptance *is* the decode rate: sparse-MLA holds the per-step
+forward cost roughly flat across context, so tok/s tracks how many drafted tokens
+land per step. The steep decay — token 5 is accepted only ~11% of the time — is
+both why a longer draft chain has limited headroom and why the ctx0-vs-128k
+ordering is an **acceptance** effect, not a per-step-time effect. The matching
+128k acceptance measurement is being collected and will be appended here.
+
+---
+
 ## Hardware & power
 
 | Component | Spec |

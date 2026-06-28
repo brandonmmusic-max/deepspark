@@ -38,12 +38,14 @@ draft head). See [RESULTS.md](RESULTS.md) and [CAVEATS.md](CAVEATS.md).
 
 ## Why is ctx0 *slower* than 128k? (short version)
 
-It is **not a measurement artifact.** With sparse MLA the per-step forward cost
-is roughly flat across context length, so decode tok/s is dominated by
-**speculative-decoding acceptance** — and acceptance is *higher* on the 128k
-synthetic padding (which is highly predictable) than on the tiny, high-entropy
-ctx0 prompt. It is distribution-flattered and the 128k cell is noisy. Trust ctx0
-(~235, rock-stable) as the conservative single-user number. Full analysis:
+It is **not a measurement artifact.** The 128k per-step forward is genuinely
+~19% slower than ctx0 (longer context costs more, as expected) — but
+speculative-decoding **acceptance** is far higher on the predictable 128k padding
+(mean accepted **3.22 vs 1.87** of 5, **+47% tokens/step**), and that overwhelms
+the slower forward to net **+24% tok/s**. It is distribution-flattered and the
+128k cell is noisy, so trust ctx0 (~235, rock-stable) as the conservative
+single-user number. Measured breakdown:
+[Measured acceptance](#measured-acceptance--the-evidence) · full analysis:
 [CAVEATS.md](CAVEATS.md#why-ctx0-is-slower-than-128k).
 
 ---
@@ -52,27 +54,37 @@ ctx0 prompt. It is distribution-flattered and the 128k cell is noisy. Trust ctx0
 
 The explanation above is backed by the live vLLM spec-decode counters
 (`vllm:spec_decode_num_accepted_tokens_per_pos_total`), captured as the delta
-across a sustained `llm_decode_bench` run — measured, not asserted.
+across sustained `llm_decode_bench` runs at production config (γ=5, temp 0.1) —
+measured, not asserted.
 
-**Production config (γ=5, 5 draft tokens), ctx0, temp 0.1 — decode 231.4 tok/s:**
+| Draft token position | Acceptance @ ctx0 | Acceptance @ 128k |
+|:---|---:|---:|
+| 1 | 74.0% | 86.3% |
+| 2 | 50.4% | 74.8% |
+| 3 | 32.2% | 65.4% |
+| 4 | 19.4% | 52.1% |
+| 5 | 10.9% | 43.5% |
+| **Mean accepted / 5** | **1.87** | **3.22** |
+| **Emitted per step** (incl. bonus) | **2.87** | **4.22** |
+| **Decode tok/s** | **237.7** | **293.9** |
 
-| Draft token position | Acceptance |
-|:---|---:|
-| 1 | 74.2% |
-| 2 | 50.6% |
-| 3 | 30.7% |
-| 4 | 19.2% |
-| 5 | 10.9% |
+**This is the whole story of why ctx0 < 128k — and it confirms that a longer
+context really is slower per step:**
 
-- **Mean accepted length: 1.86 of 5 drafted** (+1 bonus = **2.86 tokens emitted per target step**).
-- Overall draft-token acceptance: **37.1%** (6,638 accepted of 17,875 drafted).
+- Implied per-step forward time is **12.1 ms @ ctx0 vs 14.4 ms @ 128k** — so the
+  128k forward *is* genuinely **~19% slower** (longer context costs more per step,
+  exactly as expected; sparse-MLA softens that cost but does not erase it).
+- But the draft lands **far more often** on the predictable long-context padding —
+  mean accepted **3.22 vs 1.87**, i.e. **+47% tokens emitted per step**.
+- Acceptance (+47%) overwhelms the slower forward (+19%), netting **+24% decode
+  tok/s** (293.9 vs 237.7).
 
-This per-position acceptance *is* the decode rate: sparse-MLA holds the per-step
-forward cost roughly flat across context, so tok/s tracks how many drafted tokens
-land per step. The steep decay — token 5 is accepted only ~11% of the time — is
-both why a longer draft chain has limited headroom and why the ctx0-vs-128k
-ordering is an **acceptance** effect, not a per-step-time effect. The matching
-128k acceptance measurement is being collected and will be appended here.
+So `ctx0 < 128k` is a **speculative-acceptance effect riding on top of a
+(correctly) slower per-step forward** — not a measurement artifact. Caveat: the
+128k acceptance is **inflated by the benchmark's repetitive synthetic padding**;
+real long-context text is less predictable, so treat ctx0 (~235) as the
+conservative single-user number. The steep ctx0 decay (token 5 lands only ~11%)
+is also why lengthening the draft chain has little headroom on this head.
 
 ---
 

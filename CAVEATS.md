@@ -36,16 +36,16 @@ Two levers: **acceptance** (a spec-decode property) and **per-step time** (the
 target forward). The ctx0-vs-128k result is explained entirely by which lever
 dominates.
 
-### 3. Per-step time is ~flat across context — because of sparse MLA
+### 3. Per-step time grows only modestly with context — because of sparse MLA
 
 The model runs **MLA + a sparse indexer** (`B12X_MLA_SPARSE` +
 `VLLM_USE_B12X_SPARSE_INDEXER`). At decode, attention reads a **bounded top-k**
 of the KV (a fixed budget selected by the indexer), **not** the full 128k. So the
 classic "KV grows linearly → decode slows with context" effect is largely
-**defeated**: the per-step forward at 128k is only marginally slower than at
-ctx0, because attention is a small slice of the step and the **dense GEMM + MoE
-dominate and are context-independent**. (NCU decode budget: dense ~33.7%, PCIe
-all-reduce ~17.3%, MoE ~12.8%, MLA ~5.5%.)
+**softened** (not erased): the per-step forward at 128k is **measured ~19% slower**
+than ctx0 (12.1 ms → 14.4 ms per step), because attention is a small slice of the
+step and the **dense GEMM + MoE dominate and are context-independent**. (NCU
+decode budget: dense ~33.7%, PCIe all-reduce ~17.3%, MoE ~12.8%, MLA ~5.5%.)
 
 ### 4. Acceptance is *higher* at 128k — because the padding is predictable
 
@@ -53,13 +53,15 @@ This is the real driver. The benchmark builds long context from **calibrated
 padding** (repetitive filler text). The `ignore_eos` continuation is then:
 
 - **At ctx0:** conditioned on a tiny prompt → high-entropy, hard to predict → the
-  DSpark draft is accepted less often (~2.84 of 5).
-- **At 128k:** conditioned on 128k of **repetitive** padding → the continuation
-  is strongly patterned and easy to predict → DSpark drafts it **more
-  accurately** → higher acceptance → more accepted tokens per step.
+  DSpark draft lands less often (**measured mean 1.87 of 5**; token-5 acceptance
+  only ~11%).
+- **At 128k:** conditioned on 128k of **repetitive** padding → strongly patterned
+  and easy to predict → DSpark drafts it **more accurately** (**measured mean 3.22
+  of 5**; token-5 acceptance ~44%, 4× higher than ctx0).
 
-The acceptance gain at 128k **more than offsets** the small per-step slowdown, so
-128k posts a higher tok/s. That is the entire effect.
+The acceptance gain (**+47% tokens emitted per step**) **more than offsets** the
+~19% per-step slowdown, so 128k nets **+24% tok/s** (293.9 vs 237.7). That is the
+entire effect — see the measured ctx0-vs-128k table in the README.
 
 ### 5. The caveats *on* this caveat — do not over-read "128k is faster"
 

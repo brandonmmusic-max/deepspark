@@ -7,8 +7,7 @@ This artifact stands on open-source work by others.
 The serving stack runs on the **b12x** vLLM fork (distributed as the
 `voipmonitor/vllm` images on Docker Hub). It is **fully open source** and is
 included here — both as the Docker runtime and as the vendored vLLM integration
-source under [`overlay/vllm/`](overlay/vllm/) — **with its author's permission
-and at their request.**
+source under [`overlay/vllm/`](overlay/vllm/) — full credit to voipmonitor and vllm team.
 
 b12x provides the pieces that make this run on consumer Blackwell:
 

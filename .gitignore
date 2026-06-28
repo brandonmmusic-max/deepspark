@@ -1,0 +1,19 @@
+# model weights / large binaries — never commit
+*.safetensors
+*.bin
+*.pt
+*.pth
+models/
+
+# python / build caches
+**/__pycache__/
+*.pyc
+*.so
+*.o
+
+# profiling / logs
+*.log
+*.nsys-rep
+*.sqlite
+nsys/
+.cache/
